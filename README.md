@@ -15,7 +15,7 @@ This repository contains a package, PersLands, and a set of experiments for anal
 ## Code
 The main files for computation of persistence landscapes of latent spaces of Convolutional Neural Networks (CNNs) are stored under `PersLands/`.
 
-Experiments performed can be found under `Esperiments/`. On the one hand, `landscapes_*.py` obtains and saves the latent landscapes of all the layers of the CNN model. On the other hand, `*_tests.py` loads this data to perform different experiments.
+Experiments performed can be found under `Esperiments/`. On the one hand, `landscapes_*.py` obtains and saves the latent landscapes of all the studied layers of the CNN model. On the other hand, `*_tests.py` loads this data to perform different experiments.
 
 ## Datasets
 - Vidović, I., Cupec, R., Željko Hocenski: Crop row detection by global energy minimization. Pattern Recognition 55, 68–86 (2016). https://doi.org/10.1016/j.patcog.2016.01.013
