@@ -1,146 +1,121 @@
-import numpy as np
-import scipy
-import scipy.io as sio
-import gudhi as gd
-import gudhi.representations
-import csv
-import matplotlib.pyplot as plt
-import pickle
+"""This script computes and saves the latent landscapes for U-Nets from the 
+activations maps of the layers studied. In addition, it plots the (average) 
+latent landscapes of every layer, performs PCA and different experiments.
 
+
+In our case, we study the ReLU layers, storing the output activation maps in 
+'activationCell.mat' from Matlab and loading them in Python. 
+
+We recommend to work with the saved latent landscapes and perform with them 
+different experiments using 'unet_tests.py'.
+
+- For single images, it compares them computing the distance between each layer 
+landscape, the distance of the whole network representation, the permutation 
+test taking as samples each of the layer landscape, and the complexity of each 
+image latent representation along the network.
+
+- For the whole batch of images, it compares the different U-Net models using 
+the permutation test of each network with itself layer by layer 
+(_layer_pvalue), the test between whole networks ('_pvalue'), and the test 
+between the layers within a network('_samenet_pvalue'). It is also possible to 
+compute the complexity of the latent representations of the images along the 
+network for certain U-net model (num_batch_complexity).
+
+
+Parameters
+----------
+resol : resolution of landscapes
+numkthlands : number of k-th landscapes
+layer_names : names of the layers studied (for the graphic)
+dir_data : directory path where the activation maps are stored
+dir_results : directory path where results are saved
+name_act_maps : common part of the name of the activation maps files
+name_single_imgs : name of the activation maps for which single image 
+landscapes are computed
+names_unets : name of the CNN models
+images : images for which single-image landscapes are computed
+num_batch_complexity : CNN for which complexity is computed
+file_name_single_imgs : name of the file where single-image results are saved
+file_name_batch : name of the file where different CNN results are saved
+file_name_batch_complexity : name of the file where complexity results are saved
+"""
+
+import scipy.io as sio
+import numpy as np
 
 import PersLands as PL
+import parameters
 
-resol = 700
-numkthlands = 10
-LS = gd.representations.Landscape(num_landscapes=numkthlands, resolution=resol)
-Ess = gd.representations.preprocessing.DiagramSelector(use = True, point_type='finite')
-BC = gd.representations.vector_methods.BettiCurve(resolution=resol)
-x = np.linspace(0,resol,num=resol)
-names = ["E1-ReLU1", "E1-ReLU2", "E2-ReLU1", "E2-ReLU2", "E3-ReLU1", "E3-ReLU2", "B-ReLU1", "B-ReLU2", "D1-UpReLU", "D1-ReLU1", "D1-ReLU2", "D2-UpReLU", "D2-ReLU1", "D2-ReLU2", "D3-UpReLU", "D3-ReLU1", "D3-ReLU2"]
-
-a0 = False
-a1 = False
-b = False
-brgb = True
-b8rgb = False
-
-serv = '/xxx/xxx/xxxx/xxx/xxxxxx/x'
-serv_results = '/xxx/xxx/xxxx/xxx/xxxxxx/x'
-
-
-if a0 or a1:
-    net_path = serv + 'ctivationCell_rgb.mat'
-    dataMatrix = sio.loadmat(net_path)
+def load_matlab(dir_path, name):
+    activations_path = dir_path + name + '.mat'
+    dataMatrix = sio.loadmat(activations_path)
     data = dataMatrix['activationCell']
-    numLayers = data.shape[1]
-    numImages = data[0][0].shape[1]
-#a0
-if a0:
-    print('a0...')
-    Landscapes_a0_2 = PL.a0(data, resol, numkthlands, LS, Ess, names, x, serv_results, 'a0_5_rgb', perform_pca=False, k=5)
-    Landscapes_a0_3 = PL.a0(data, resol, numkthlands, LS, Ess, names, x, serv_results, 'a0_7_rgb', perform_pca=False, k=7)
+    return data
 
-    # Compare a0 for two different images computing the distance between each layer landscape, the distance of the whole network representation and the permutation test taking as samples each of the layer landscape
-    print('Test...')
-    distance = np.zeros(numLayers+1)
-    for m in range(numLayers):
-        xx = Landscapes_a0_2[m,:]
-        y = Landscapes_a0_3[m,:]
-        distance[m] = np.sqrt(np.sum((xx-y)**2))
-    distance[m+1] = np.sqrt(np.sum((Landscapes_a0_2.flatten() - Landscapes_a0_3.flatten())**2))
-    lands = []
-    lands.append(Landscapes_a0_2)
-    lands.append(Landscapes_a0_3)
-    p_value = PL.permutation_nets(lands, serv_results, 'a0_rgb57_layer_pvalue_dist_layerwiseWhole')
-    name_str = serv_results + 'a0_rgb57_layer_pvalue_dist_layerwiseWhole' + '.csv'
-    with open(name_str, mode='a', newline='') as pvalue_file:
-        compare_writer = csv.writer(pvalue_file, delimiter=',')
-        compare_writer.writerow(distance)
 
-    # Compute complexity for the latent representation of two different images
-    print('Complexity...')
-    complex2 = np.zeros(numLayers)
-    complex3 = np.zeros(numLayers)
-    for m in range(numLayers):
-        complex2[m] = PL.complexity(Landscapes_a0_2[m,:])
-        complex3[m] = PL.complexity(Landscapes_a0_3[m,:])
-    xaxis = np.arange(0,numLayers)
-    plt.plot(xaxis,complex2, '-o')
-    plt.plot(xaxis,complex3, '-o')
-    path_complex = serv_results + 'a0_57_rgb' + '_complex.png'
-    plt.savefig(path_complex)
-    plt.show()
-    plt.close()
+if __name__=='__main__':
 
-#a1
-if a1:
-    print('a1...')
-    Landscapes_a1 = PL.a1(data, resol, numkthlands , LS, Ess, names, x, serv_results, 'a1_rgb', perform_pca=True)
+    LS = parameters.LS
+    Ess = parameters.Ess
 
-    print('Test...')
-    p_value_a1 = PL.permutation(Landscapes_a1, numLayers, resol, numkthlands, serv_results, 'a1_rgb_pvalue')
+    resol = parameters.RESOL
+    numkthlands = parameters.NUMKTHLANDS
+    layer_names = parameters.NAMES_LAYERS_UNET
+    dir_data = parameters.DIR_DATA
+    dir_results = parameters.DIR_RESULTS
 
-#b) Comparing different U-Net models. This returns the permutation test of each network with itself layer by layer (a1_unetx_pvalue), the test between whole networks ('b8Rgb_pvalue'), and the test between the layers within a network('b_8Rgb_layer_pvalue')
-if b:
-    print('b...')
-    Landscapes_8rgb = []
-    for st in ['unet1', 'unet3', 'unet5', 'unet6', 'unet7', 'rgb']:
-        net_path = serv + 'ctivationCell_' + st + '.mat'
-        dataMatrix = sio.loadmat(net_path)
-        data = dataMatrix['activationCell']
+    name_act_maps = 'ctivationCell_'
+    name_single_imgs = name_act_maps + 'rgb'
+    names_unets = ['unet1', 'unet3', 'unet6', 'unet7', 'rgb']
+    images = [2, 3, 5, 7]
+    num_batch_complexity = 2
+
+    file_name_single_imgs = 'landscapes_rgb23'
+    file_name_batch = 'landscapes_Multi1234Rgb'
+    file_name_batch_complexity = 'landscapesM3'
+
+
+    if name_single_imgs:
+        print('U-Nets single images...')
+        #Load activation maps
+        data = load_matlab(dir_data, name_single_imgs)
         numLayers = data.shape[1]
-        numImages = data[0][0].shape[1]
-        file_name = 'b_unet'+st
-        Landscapes_b = PL.a1(data, resol, numkthlands , LS, Ess, names, x, serv_results, file_name, perform_pca=False)
-        #pvalue of all layers for all unetx
-        #print('Test...')
-        #pvalue_path = 'a1_' + st + '_pvalue'
-        #p_value_a1 = PL.permutation(Landscapes_b, numLayers, resol, numkthlands, serv_results, pvalue_path)
-        Landscapes_8rgb.append(Landscapes_b) 
-    print('Test...')
-    p_value_b_8bands = PL.permutation_nets(Landscapes_8rgb, serv_results, 'b_8bandsRgb_u1u3u5u6u7rgb_pvalue')
-    PL.permutation_layer_nets(Landscapes_8rgb, numLayers, resol, numkthlands, serv_results, 'b_8bandsRgb_u1u3u5u6u7rgb_layer_pvalue')
 
-#b) Comparing U-Net Multi-4 and RGB
-if brgb:
-    print('b...')
-    Landscapes_8rgb_nets = []
-    for st in ['unet7', 'rgb']:
-        net_path = serv + 'ctivationCell_' + st + '.mat'
-        dataMatrix = sio.loadmat(net_path)
-        data = dataMatrix['activationCell']
-        numLayers = data.shape[1]
-        numImages = data[0][0].shape[1]
-        file_name = 'b_'+st
-        Landscapes_b = PL.a1(data, resol, numkthlands , LS, Ess, names, x, serv_results, file_name, perform_pca=False)
-        Landscapes_8rgb_nets.append(Landscapes_b)
-    #print('Test...')
-    #p_value_b_8rgb = PL.permutation_nets(Landscapes_8rgb_nets, serv_results, 'b_unet3rgb_pvalue')
-    #PL.permutation_layer_nets(Landscapes_8rgb_nets, numLayers, resol, numkthlands, serv_results, 'b_unet3rgb_layer_pvalue')
+        #Compute latent landscapes
+        landscapes_single_imgs = []
+        for st in images:
+            landscapes_single = PL.compute_llands_single_img(data, resol, numkthlands, LS, Ess, layer_names, dir_results, file_name_single_imgs, k=st, perf_pca=False, plot_lands=True)
+            landscapes_single_imgs.append(landscapes_single)
+        PL.store_data(file_name_single_imgs, landscapes_single_imgs)
 
-    # Store data (serialize)
-    your_data = Landscapes_8rgb_nets
-    name_dir = '/POOL/data/clara/lands' + 'Landscapes_8rgb_nets' + '.pickle'
-    with open('Landscapes_8rgb_nets.pickle', 'wb') as handle:
-        pickle.dump(your_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        #Perform tests
+        print('Test...')
+        distance = PL.distance_single_imgs(landscapes_single_imgs, numLayers)
+        p_value = PL.permutation_nets(landscapes_single_imgs, dir_results, file_name_single_imgs)
+        PL.complexity_single_imgs(landscapes_single_imgs, numLayers, dir_results, file_name_single_imgs)
 
-    # Load data (deserialize)
-    #with open('Landscapes_8rgb_nets.pickle', 'rb') as handle:
-    # unserialized_data = pickle.load(handle)
+        #Save distance results
+        name_str = dir_results + file_name_single_imgs + '_dist.csv'
+        np.savetxt(name_str, distance, delimiter=",")
 
-# Compare multi layer by layer between them and with rgb
-if b8rgb:
-    print('b...')
-    Landscapes_8netsRgb = []
-    name_nets = ['unet1', 'unet3', 'unet5', 'unet6', 'unet7', 'rgb']
-    for st in name_nets:
-        net_path = serv + 'ctivationCell_' + st + '.mat'
-        dataMatrix = sio.loadmat(net_path)
-        data = dataMatrix['activationCell']
-        numLayers = data.shape[1]
-        numImages = data[0][0].shape[1]
-        file_name = 'b_'+st
-        Landscapes_b = PL.a1(data, resol, numkthlands , LS, Ess, names, x, serv_results, file_name, perform_pca=False)
-        Landscapes_8netsRgb.append(Landscapes_b)
-    print('Test...')
-    PL.permutation_layer_nets(Landscapes_8netsRgb, numLayers, resol, numkthlands, serv_results, 'b_unetRgb_layer_pvalue')
+
+    if names_unets:
+        print('U-Nets batch images...')
+        landscapes_MultiRgb = []
+        for st in names_unets:
+            #Load activation maps
+            file = name_act_maps + st
+            data = load_matlab(dir_data, file)
+            numLayers = data.shape[1]
+
+            #Compute latent landscapes
+            file_name = 'landscapes_' + st
+            landscapes_batch = PL.compute_llands_batch(data, resol, numkthlands, LS, Ess, layer_names, dir_results, file_name, perf_pca=False, plot_lands=True)
+            landscapes_MultiRgb.append(landscapes_batch)
+        
+        PL.store_data(file_name_batch, landscapes_MultiRgb)
+        
+        #Perform tests
+        print('Test...')
+        PL.perform_permutation_tests(landscapes_MultiRgb, file_name_batch, dir_results, resol, numLayers, numkthlands)
+        PL.complexity_batch_imgs(landscapes_MultiRgb[num_batch_complexity], file_name_batch_complexity, numLayers, dir_results, resol, numkthlands)

@@ -1,149 +1,141 @@
-import numpy as np
-import scipy
-import scipy.io as sio
-import gudhi as gd
-import gudhi.representations
-import csv
-import matplotlib.pyplot as plt
+"""This script computes and saves the latent landscapes for CIFAR10 from the 
+activations maps of the VGG-16 layers studied. In addition, it plots the 
+(average) latent landscapes of every layer, performs PCA and different 
+experiments.
 
+In our case, we study the ReLU layers, storing the output activation maps in 
+'activationCell.mat' from Matlab and loading them in Python.
+
+We recommend to work with the saved latent landscapes and perform with them 
+different experiments using 'cifar_tests.py'.
+
+- For single images (a0) (or enough of them, a00) of different classes, it 
+compares them computing the distance between each layer landscape, the distance 
+of the whole model representation, and the complexity of each image latent 
+representation along the network.
+
+- For the whole batch, it compares the different models using the permutation 
+test of each model with itself layer by layer (_layer_pvalue), the test between 
+whole models ('_pvalue'), and the test between the layers within a model
+('_samenet_pvalue'). Moreover, it computes the mean distance between landscapes 
+of the same layer (_meanDist) and the distance between average landscapes 
+(_distAv). It is also possible to compute the complexity of the latent 
+representations of the batch along a certain model (num_batch_complexity).
+
+Parameters
+----------
+resol : resolution of landscapes
+numkthlands : number of k-th landscapes
+batch : batch size
+layer_names : names of the layers studied (for the graphic)
+dir_data : directory path where the activation maps are stored
+dir_results : directory path where results are saved
+name_act_maps : common part of the name of the activation maps files
+name_single_imgs : name of the activation maps for which single image 
+landscapes are computed
+names_models : name of the CNN models
+images : images for which single-image landscapes are computed
+num_batch_complexity : CNN model for which complexity is computed
+file_name_single_imgs : name of the file where single-image results are saved
+file_name_batch : name of the file where batch results are saved
+file_name_batch_complexity : name of the file where complexity results are saved
+"""
+
+import scipy.io as sio
+import numpy as np
 
 import PersLands as PL
+import parameters
 
-resol = 700
-numkthlands = 10
-batch = 32
-LS = gd.representations.Landscape(num_landscapes=numkthlands, resolution=resol)
-Ess = gd.representations.preprocessing.DiagramSelector(use = True, point_type='finite')
-BC = gd.representations.vector_methods.BettiCurve(resolution=resol)
-x = np.linspace(0,resol,num=resol)
-names = ["ReLU11", "ReLU12", "ReLU21", "ReLU22", "ReLU31", "ReLU32", "ReLU33", "ReLU41", "ReLU42", "ReLU43", "ReLU51", "ReLU52", "ReLU53"]
-
-a0 = False
-a1 = False
-b = False
-a00 = False
-a11 = False
-bb = True
-a0a00 = False
-
-serv = '/xxx/xxx/xxxx/xxx/xxxxxx/x'
-serv_results = '/xxx/xxx/xxxx/xxx/xxxxxx/x'
-
-if a0 or a1 or a00 or a11:
-    net_path = serv + 'ctivationCell_cifar.mat'
-    dataMatrix = sio.loadmat(net_path)
+def load_matlab(dir_path, name):
+    activations_path = dir_path + name + '.mat'
+    dataMatrix = sio.loadmat(activations_path)
     data = dataMatrix['activationCell']
-    numLayers = data.shape[1]
-    numImages = data[0][0].shape[1]
-#a0)
-if a0:
-    print('a0...')
-    Landscapes_a0 = PL.a0(data, resol, numkthlands, LS, Ess, names, x, serv_results, 'a0_cifar', perform_pca=False)
+    return data
 
-#a1)
-if a1:
-    print('a1...')
-    Landscapes_a1 = PL.a1(data, resol, numkthlands , LS, Ess, names, x, serv_results, 'a1_cifar', perform_pca=True)
+if __name__=='__main__':
 
-    print('Test...')
-    p_value_a1 = PL.permutation(Landscapes_a1, numLayers, resol, numkthlands,serv_results, 'a1_cifar_pvalue')
+    LS = parameters.LS
+    Ess = parameters.Ess
 
-# Compare latent representations for a single image (a0) or enough of the (a00)
-if a0a00:
-    print('a0a00...')
-    Landscapes_classes0 = []
-    Landscapes_classes00 = []
-    classes = ['cat', 'dog', 'airplane']
-    for st in classes:
-        net_path = serv + 'ctivationCell_cifar_' + st + '.mat'
-        dataMatrix = sio.loadmat(net_path)
-        data = dataMatrix['activationCell']
-        numLayers = data.shape[1]
-        numImages = data[0][0].shape[1]
-        file_name0 = 'a0_'+st
-        file_name00 = 'a00_'+st
-        Landscapes_a0 = PL.a0(data, resol, numkthlands , LS, Ess, names, x, serv_results, file_name0, perform_pca=False)
-        Landscapes_a00 = PL.a00(data, resol, numkthlands , LS, Ess, names, x, serv_results, file_name00, perform_pca=False)
-        Landscapes_classes0.append(Landscapes_a0)
-        Landscapes_classes00.append(Landscapes_a00)
+    resol = parameters.RESOL
+    numkthlands = parameters.NUMKTHLANDS
+    batch = parameters.BATCH
+    layer_names = parameters.NAMES_LAYERS_VGG
+    dir_data = parameters.DIR_DATA
+    dir_results = parameters.DIR_RESULTS
 
-    # Different classes computing the distance between each layer landscape, the distance of the whole network representation
-    print('Distance...')
-    for st in range(len(classes)):
-        net01 = Landscapes_classes0[st]
-        net001 = Landscapes_classes00[st]
-        for stt in range(st+1, len(classes)):
-            net02 = Landscapes_classes0[stt]
-            net002 = Landscapes_classes00[stt]
-            distance0 = np.zeros(numLayers+1)
-            distance00 = np.zeros(numLayers+1)
-            for m in range(numLayers):
-                xx0 = net01[m,:]
-                y0 = net02[m,:]
-                distance0[m] = np.sqrt(np.sum((xx0-y0)**2))
+    name_act_maps = 'ctivationCell_cifar'
+    name_single_imgs = ['_cat', '_dog', '_airplane', '']
+    name_models = ['_cat', '_dog', '_airplane', '']
+    images = [0]
+    num_batch_complexity = 3
 
-                xx00 = net001[m,:]
-                y00 = net002[m,:]
-                distance00[m] = np.sqrt(np.sum((xx00-y00)**2))
-            distance0[m+1] = np.sqrt(np.sum((net01.flatten() - net02.flatten())**2))
-            distance00[m+1] = np.sqrt(np.sum((net001.flatten() - net002.flatten())**2))
-            name_str0 = serv_results + 'a0_distance_catdogairplane' + '.csv'
-            name_str00 = serv_results + 'a0_distance_catdogairplane' + '.csv'
-            with open(name_str0, mode='a', newline='') as dist_file:
-                compare_writer = csv.writer(dist_file, delimiter=',')
-                compare_writer.writerow(distance0)
-            with open(name_str00, mode='a', newline='') as dist_file:
-                compare_writer = csv.writer(dist_file, delimiter=',')
-                compare_writer.writerow(distance00)
+    file_name_single_imgs = 'landscapes_catdogairmulti_img'
+    file_name_batch = 'landscapes_catdogairmulti_batch'
+    file_name_batch_complexity = 'landscapesmulti'
 
-#b) Comparing different classes
-if b:
-    print('b...')
-    Landscapes_nets = []
-    for st in ['', '_cat', '_dog', '_airplane']:
-        net_path = serv + 'ctivationCell_cifar' + st + '.mat'
-        dataMatrix = sio.loadmat(net_path)
-        data = dataMatrix['activationCell']
-        numLayers = data.shape[1]
-        numImages = data[0][0].shape[1]
-        file_name = 'b_cifar'+st
-        Landscapes_b = PL.a1(data, resol, numkthlands , LS, Ess, names, x, serv_results, file_name, perform_pca=False)
-        Landscapes_nets.append(Landscapes_b)
-    print('Test...')
-    p_value_b_classes = PL.permutation_nets(Landscapes_nets, serv_results, 'b_multicatdogairplane_pvalue')
-    p_value_b_classes_layerwise = PL.permutation_layer_nets(Landscapes_nets, numLayers, resol, numkthlands, serv_results, 'b_classes_multicatdogairplane_pvalue')
+    if name_single_imgs:
+        print('CIFAR single images...')
+        landscapes_single = []
+        landscapes_singleneeded = []
+        for st in name_single_imgs:
+            #Load activation maps
+            file = name_act_maps + st
+            data = load_matlab(dir_data, file)
+            numLayers = data.shape[1]
 
-#a00) CIFAR-10
-if a00:
-    print('a00...')
-    Landscapes_a00 = PL.a00(data, resol, numkthlands, LS, Ess, names, x, serv_results, 'a00_cifar', perform_pca=False)
+            #Compute latent landscapes
+            file_name0 = 'landscapes_img' + st
+            file_name00 = 'landscapes_imgneed_' + st
+            for s in images:
+                Landscapes_a0 = PL.compute_llands_single_img(data, resol, numkthlands, LS, Ess, layer_names, dir_results, file_name0, k=s, perf_pca=False, plot_lands=True)
+                Landscapes_a00 = PL.compute_llands_single_neededimg(data, resol, numkthlands, LS, Ess, layer_names, dir_results, file_name00, k=s, perf_pca=False, plot_lands=True)
+                
+                landscapes_single.append(Landscapes_a0)
+                landscapes_singleneeded.append(Landscapes_a00)
+            
+        PL.store_data(file_name_single_imgs, landscapes_single)
+        PL.store_data(file_name_single_imgs + 'need', landscapes_singleneeded)
 
-#a11) CIFAR-10
-if a11:
-    print('a11...')
-    Landscapes_a11 = PL.a11(data, resol, numkthlands, batch, LS, Ess, names, x, serv_results, 'a11_cifar_cat', perform_pca=True)
-
-    print('Test...')
-    p_value_a11 = PL.permutation(Landscapes_a11, numLayers, resol, numkthlands,serv_results, 'a11_cifar_cat_pvalue')
-
-#b) CIFAR-10 with a1
-if bb:
-    print('bb...')
-    Landscapes_nets = []
-    name_nets = ['', '_cat', '_dog', '_airplane']
-    for st in name_nets:
-        net_path = serv + 'ctivationCell_cifar' + st + '.mat'
-        dataMatrix = sio.loadmat(net_path)
-        data = dataMatrix['activationCell']
-        numLayers = data.shape[1]
-        numImages = data[0][0].shape[1]
-        file_name = 'bb_cifar'+st
-        Landscapes_bb = PL.a11(data, resol, numkthlands, batch, LS, Ess, names, x, serv_results, file_name, perform_pca=False)
-        #pvalue of all layers for all nets
+        #Perform tests
         print('Test...')
-        pvalue_path = 'a11_cifar' + st + '_pvalue'
-        p_value_a1 = PL.permutation(Landscapes_bb, numLayers, resol, numkthlands, serv_results, pvalue_path)
-        Landscapes_nets.append(Landscapes_bb)
-    print('Test...')
-    #p_value_bb_8bands = PL.permutation_nets(Landscapes_nets, serv_results, 'bb_multicatdogairplane_pvalue')
-    p_value_b_classes_layerwise = PL.permutation_layer_nets(Landscapes_nets, numLayers, resol, numkthlands, serv_results, 'bb_classes_multicatdogairplane_pvalue')
+        distance0 = PL.distance_single_imgs(landscapes_single, numLayers)
+        distance00 = PL.distance_single_imgs(landscapes_singleneeded, numLayers)
+        #Save distance results
+        name_str0 = dir_results + file_name_single_imgs + '_dist.csv'
+        name_str00 = dir_results + file_name_single_imgs + 'need_dist.csv'
+        np.savetxt(name_str0, distance0, fmt='%.5e', delimiter=",")
+        np.savetxt(name_str00, distance00, fmt='%.5e', delimiter=",")
+
+        PL.complexity_single_imgs(landscapes_singleneeded, numLayers, dir_results, file_name_single_imgs + 'need')
+
+
+    if name_models:
+        print('CIFAR image batch...')
+        landscapes_models = []
+        for st in name_models:
+            #Load activation maps
+            file = name_act_maps + st
+            data = load_matlab(dir_data, file)
+            numLayers = data.shape[1]
+
+            #Compute latent landscapes
+            file_name = 'landscapes' + st
+            landscapes_batch = PL.compute_llands_neededbatch(data, resol, numkthlands, batch, LS, Ess, layer_names, dir_results, file_name, perf_pca=False, plot_lands=True)
+            landscapes_models.append(landscapes_batch)
+
+        PL.store_data(file_name_batch, landscapes_models)
+        
+        #Perform tests
+        print('Test...')
+        PL.perform_permutation_tests(landscapes_models, file_name_batch, dir_results, resol, numLayers, numkthlands, nets=False, layers=True)
+
+        mean_distances, distance_avLands = PL.distance_mean(landscapes_models, numLayers, resol, numkthlands)
+        #Save distance results
+        name_strMn = dir_results + file_name_batch + '_meanDist.csv'
+        name_strAv = dir_results + file_name_batch + '_distAv.csv'
+        np.savetxt(name_strMn, mean_distances, fmt='%.5e', delimiter=",")
+        np.savetxt(name_strAv, distance_avLands, fmt='%.5e', delimiter=",")
+
+        PL.complexity_batch_imgs(landscapes_models[num_batch_complexity], file_name_batch_complexity, numLayers, dir_results, resol, numkthlands)
