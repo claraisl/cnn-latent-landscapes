@@ -1,4 +1,4 @@
-"""This script computes and saves the latent landscapes for CIFAR10 from the 
+"""This script computes and saves the latent landscapes for CIFAR-10 from the 
 activations maps of the VGG-16 layers studied. In addition, it plots the 
 (average) latent landscapes of every layer, performs PCA and different 
 experiments.

@@ -1,6 +1,4 @@
-"""This script computes and saves the latent landscapes for U-Nets from the 
-activations maps of the layers studied. In addition, it plots the (average) 
-latent landscapes of every layer, performs PCA and different experiments.
+"""This script computes and saves the latent landscapes for agricultural dataset (CRBD) from the activations maps of the U-Net layers studied. In addition, it plots the (average) latent landscapes of every layer, performs PCA and different experiments.
 
 
 In our case, we study the ReLU layers, storing the output activation maps in 

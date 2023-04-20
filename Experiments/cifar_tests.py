@@ -1,4 +1,4 @@
-"""Performs experiments on CIFAR10 models:
+"""Performs experiments on VGG-16/CIFAR-10 models:
 - Distance
 - Average latent landscapes plot
 - K-means

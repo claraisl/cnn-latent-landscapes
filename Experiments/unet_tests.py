@@ -1,4 +1,4 @@
-"""Performs experiments on U-Net models:
+"""Performs experiments on U-Net/CRBD models:
 - Permutation tests
 - Average latent landscapes plot
 
