@@ -313,16 +313,18 @@ def _plot_2dpca(data, num_samples, data_legend, save_path):
     matplotlib.rcParams['mathtext.fontset'] = 'stix'
     matplotlib.rcParams['font.family'] = 'STIXGeneral'
     marker = itertools.cycle(('o', 'v','*', 'D', '<', '+', '>', 'x', 's'))
-    plt.figure(figsize=(6,6))
+    plt.figure(figsize=(8,7))
     for m in range(num_samples):
         if data.shape[1] == 1:
             plt.scatter(data[batch*m:batch*(m+1)], m*np.ones(batch), marker=next(marker))
         else:
              plt.scatter(data[batch*m:batch*(m+1),0], data[batch*m:batch*(m+1),1], marker=next(marker))
 
-    plt.title('PCA 2D projections', fontsize=44)
+    plt.title('PCA projections', fontsize=44)
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
+    plt.xlabel('PC1', fontsize=25)
+    plt.ylabel('PC2', fontsize=25)
     plt.legend(data_legend, loc='best', fontsize=25)
     plt.savefig(path_pca)
     plt.show()
@@ -330,7 +332,7 @@ def _plot_2dpca(data, num_samples, data_legend, save_path):
 
 def _plot_kmeans(data, labels, num_clusters, save_path):
     """Plot k-means clusters and save the result (as kmeans.png)"""
-    plt.figure(figsize=(6,6))
+    plt.figure(figsize=(8,7))
     title = 'K-means, k=' + str(num_clusters)
     path_kmeans = save_path + 'kmeans.png'
     if data.shape[1] == 1:
@@ -339,9 +341,10 @@ def _plot_kmeans(data, labels, num_clusters, save_path):
     else:
         plt.scatter(data[:,0], data[:,1], c=labels)
         plt.title(title, fontsize=44)
-    plt.tight_layout()
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
+    plt.xlabel('PC1', fontsize=25)
+    plt.ylabel('PC2', fontsize=25)
     plt.savefig(path_kmeans)
     plt.show()
     plt.close()
