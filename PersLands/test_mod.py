@@ -332,7 +332,7 @@ def _plot_2dpca(data, num_samples, data_legend, save_path):
 
 def _plot_kmeans(data, labels, num_clusters, save_path):
     """Plot k-means clusters and save the result (as kmeans.png)"""
-    plt.figure(figsize=(8,7))
+    plt.figure(figsize=(9,7))
     title = 'K-means, k=' + str(num_clusters)
     path_kmeans = save_path + 'kmeans.png'
     if data.shape[1] == 1:

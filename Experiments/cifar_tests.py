@@ -43,7 +43,7 @@ if __name__=='__main__':
 
     num_clusters = [3, 2]; layers = [5, 12]
     for l in layers:
-        for i in range(len(num_clusters)):
-            landscapes = landscapes_models[: 3 + i]
-            models_name = models[: 3 + i]
-            LandSPCA, LandS_labels, cm = PL.compute_kmeans(landscapes, resol, numkthlands, num_clusters[i], l, dir_results, file_name, models_name, plot_cm=True)
+        for idx, i in enumerate(num_clusters):
+            landscapes = landscapes_models[: 3 + idx]
+            models_name = models[: 3 + idx]
+            LandSPCA, LandS_labels, cm = PL.compute_kmeans(landscapes, resol, numkthlands, i, l, dir_results, file_name, models_name, plot_cm=True)
