@@ -25,6 +25,7 @@ if __name__=='__main__':
     layer_names = parameters.NAMES_LAYERS_VGG
     models = parameters.CLASSES
     dir_results = parameters.DIR_RESULTS
+    layers = parameters.LAYERS_PLOT_VGG
 
     numLayers = len(layer_names)
 
@@ -39,6 +40,8 @@ if __name__=='__main__':
     np.savetxt(name_strMn, mean_distances, fmt='%.5e', delimiter=",")
     np.savetxt(name_strAv, distance_avLands, fmt='%.5e', delimiter=",")
 
+    some_layer_names = [layer_names[i] for i in layers]
+    PL.plot_avLandscapes_rownets_columnlayers(landscapes_models, layers, file_name, resol, some_layer_names, numkthlands, dir_results, models)
     PL.plot_avLandscapes_rowlayers_columnnets(landscapes_models, file_name, resol, layer_names, numkthlands, dir_results, models)
 
     num_clusters = [3, 2]; layers = [5, 12]

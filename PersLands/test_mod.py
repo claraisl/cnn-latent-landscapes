@@ -326,7 +326,7 @@ def _plot_2dpca(data, num_samples, data_legend, save_path):
     plt.xlabel('PC1', fontsize=25)
     plt.ylabel('PC2', fontsize=25)
     plt.legend(data_legend, loc='best', fontsize=25)
-    plt.savefig(path_pca)
+    plt.savefig(path_pca, dpi=300)
     plt.show()
     plt.close()
 
@@ -345,7 +345,7 @@ def _plot_kmeans(data, labels, num_clusters, save_path):
     plt.yticks(fontsize=18)
     plt.xlabel('PC1', fontsize=25)
     plt.ylabel('PC2', fontsize=25)
-    plt.savefig(path_kmeans)
+    plt.savefig(path_kmeans, dpi=300)
     plt.show()
     plt.close()
 
@@ -374,11 +374,11 @@ def _confusion_matrix(batch, num_samples, labels, save_path, plot_cm=True):
 
     if plot_cm:
         # Plot confusion matrix
-        _plot_confusion_matrix(cm, save_path)
+        plot_confusion_matrix(cm, save_path)
 
     return cm
 
-def _plot_confusion_matrix(cm, save_path):
+def plot_confusion_matrix(cm, save_path):
     """Plot the given matrix and save results (as confusion.png)"""
     # Plot confusion matrix
     path_cm = save_path + '_confusion.png'
@@ -391,6 +391,6 @@ def _plot_confusion_matrix(cm, save_path):
     plt.yticks([])
     plt.xticks([])
 
-    plt.savefig(path_cm)
+    plt.savefig(path_cm, dpi=300)
     plt.show()
     plt.close()

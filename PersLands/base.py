@@ -168,7 +168,6 @@ def plot_avLandscapes_rowlayers_columnnets(landscapes, file_name, resol, name_la
             l = l + 1
         
         avLandscape_net = average_landscape(landscapes[m])
-        #mm = layers[m]
         avLandscape_layer = avLandscape_net[l*resol*numkthlands:(l+1)*resol*numkthlands]
         for t in range(numkthlands):
             axsFlat[n].plot(x,avLandscape_layer[t*resol:(t+1)*resol]) #Blue, Orange, Green, Red
@@ -176,7 +175,67 @@ def plot_avLandscapes_rowlayers_columnnets(landscapes, file_name, resol, name_la
         axsFlat[m].set_title(models[m], fontsize=57)
         plt.tight_layout()
 
-    path_lands = dir_results + file_name + '_plot.png' 
-    plt.savefig(path_lands)
+    path_lands = dir_results + file_name + '_vplot.png' 
+    plt.savefig(path_lands, dpi=500)
+    plt.show()
+    plt.close()
+
+def plot_avLandscapes_rownets_columnlayers(landscapes, layers, file_name, resol, name_layers, numkthlands, dir_results, models):
+    """Display average latent landscapes of each specified layer for the different CNN 
+    models
+    
+    Parameters
+    ----------
+    landscapes : list where each element is array-like of shape (numImages, 
+    numLayers*resol*numkthlands)
+        Persistence landscapes of each CNN model
+
+    layers : list of int
+        Layers studied
+
+    file_name : string
+        Name of the saved file
+
+    resol : int
+        Resolution of landscapes
+
+    name_layers : list of strings
+        Names of the layers studied (for the graphic)
+
+    numkthlands : int
+        Number of k-th landscapes
+
+    dir_results : string
+        Path where the plot should be saved
+
+    models : list of strings
+        Names of the CNN models
+    """
+    matplotlib.rcParams['mathtext.fontset'] = 'stix'
+    matplotlib.rcParams['font.family'] = 'STIXGeneral'
+
+    num_nets = len(landscapes)
+    numLayers = len(name_layers)
+    x = np.linspace(0,resol,num=resol)
+    fig, axs = plt.subplots(num_nets, numLayers, figsize=(30, 10),sharex=True, sharey='row')
+    axsFlat = axs.flat
+    
+    l = 0
+    for n in range(numLayers*num_nets):
+        m = np.remainder(n,numLayers)
+        if m == 0 and not n == 0:
+            l = l + 1
+        
+        avLandscape_net = average_landscape(landscapes[l])
+        mm = layers[m]
+        avLandscape_layer = avLandscape_net[mm*resol*numkthlands:(mm+1)*resol*numkthlands]
+        for t in range(numkthlands):
+            axsFlat[n].plot(x,avLandscape_layer[t*resol:(t+1)*resol]) #Blue, Orange, Green, Red
+        axsFlat[m].set_title(name_layers[m],fontsize=40)
+        axsFlat[numLayers*l].set_ylabel(models[l], fontsize=40)
+        plt.tight_layout()
+
+    path_lands = dir_results + file_name + '_hplot.png' 
+    plt.savefig(path_lands, dpi=500)
     plt.show()
     plt.close()
