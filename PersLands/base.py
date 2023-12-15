@@ -158,7 +158,7 @@ def plot_avLandscapes_rowlayers_columnnets(landscapes, file_name, resol, name_la
     num_nets = len(landscapes)
     numLayers = len(name_layers)
     x = np.linspace(0,resol,num=resol)
-    fig, axs = plt.subplots(numLayers, num_nets, figsize=(18,35),sharex=True, sharey='row')
+    fig, axs = plt.subplots(numLayers, num_nets, figsize=(21,35),sharex=True, sharey='row')
     axsFlat = axs.flat
     
     l = 0
@@ -171,12 +171,12 @@ def plot_avLandscapes_rowlayers_columnnets(landscapes, file_name, resol, name_la
         avLandscape_layer = avLandscape_net[l*resol*numkthlands:(l+1)*resol*numkthlands]
         for t in range(numkthlands):
             axsFlat[n].plot(x,avLandscape_layer[t*resol:(t+1)*resol]) #Blue, Orange, Green, Red
-        axsFlat[num_nets*l].set_ylabel(name_layers[l],fontsize=30)
-        axsFlat[m].set_title(models[m], fontsize=57)
+        axsFlat[num_nets*l].set_ylabel(name_layers[l],fontsize=45)
+        axsFlat[m].set_title(models[m], fontsize=65)
         plt.tight_layout()
 
     path_lands = dir_results + file_name + '_vplot.png' 
-    plt.savefig(path_lands, dpi=500)
+    plt.savefig(path_lands, dpi=300)
     plt.show()
     plt.close()
 
@@ -231,11 +231,11 @@ def plot_avLandscapes_rownets_columnlayers(landscapes, layers, file_name, resol,
         avLandscape_layer = avLandscape_net[mm*resol*numkthlands:(mm+1)*resol*numkthlands]
         for t in range(numkthlands):
             axsFlat[n].plot(x,avLandscape_layer[t*resol:(t+1)*resol]) #Blue, Orange, Green, Red
-        axsFlat[m].set_title(name_layers[m],fontsize=40)
-        axsFlat[numLayers*l].set_ylabel(models[l], fontsize=40)
+        axsFlat[m].set_title(name_layers[m],fontsize=45)
+        axsFlat[numLayers*l].set_ylabel(models[l], fontsize=45)
         plt.tight_layout()
 
     path_lands = dir_results + file_name + '_hplot.png' 
-    plt.savefig(path_lands, dpi=500)
+    plt.savefig(path_lands, dpi=300)
     plt.show()
     plt.close()
